@@ -44,6 +44,9 @@ public class Plan {
 
 	// 通知书号码
 	private String notifyNo;
+	
+	// 文件编号
+	private String file_No;
 
 	// 版本号
 	@Version
@@ -138,6 +141,14 @@ public class Plan {
 
 	public void setNotifyNo(String notifyNo) {
 		this.notifyNo = notifyNo;
+	}
+	
+	public String getfile_No() {
+		return file_No;
+	}
+
+	public void setfile_No(String file_No) {
+		this.file_No = file_No;
 	}
 
 	public User getCreator() {

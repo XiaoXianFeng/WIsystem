@@ -68,6 +68,7 @@ public class PlanController {
 			@RequestParam(name = "dateTo", required = false) String dateTo,
 			@RequestParam(name = "customer", required = false) String customer,
 			@RequestParam(name = "notifyNo", required = false) String notifyNo,
+			@RequestParam(name = "file_No", required = false) String file_No,
 			@RequestParam(name = "status", required = false) String status) {
 		@SuppressWarnings("unchecked")
 		Map<String, String> search = (Map<String, String>) modelMap.get("search");
