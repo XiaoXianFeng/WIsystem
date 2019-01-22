@@ -30,17 +30,33 @@ public class PlanDaoImpl implements PlanDao {
 		return plan;
 	}
 
+	private boolean hasCriteria(Map<String, String> search) {
+		String dateFrom = search.get("dateFrom");
+		String dateTo = search.get("dateTo");
+		String customer = search.get("customer");
+		String notifyNo = search.get("notifyNo");
+		String status = search.get("status");
+		String fileNo = search.get("fileNo");
+		
+		return !StringUtils.isEmpty(dateFrom)
+				|| !StringUtils.isEmpty(dateTo)
+				|| !StringUtils.isEmpty(customer)
+				|| !StringUtils.isEmpty(notifyNo)
+				|| !StringUtils.isEmpty(status)
+				|| !StringUtils.isEmpty(fileNo);
+				
+	}
 	@Override
 	public Long getPageCount(Map<String, String> search) {
 		String dateFrom = search.get("dateFrom");
 		String dateTo = search.get("dateTo");
 		String customer = search.get("customer");
 		String notifyNo = search.get("notifyNo");
-		String file_No = search.get("file_No");
 		String status = search.get("status");
+		String fileNo = search.get("fileNo");
 
 		String hqlQuery = "select count(p) from Plan p";
-		if (!search.isEmpty()) {
+		if (hasCriteria(search)) {
 			hqlQuery += " where ";
 		}
 		boolean w = false;
@@ -67,7 +83,7 @@ public class PlanDaoImpl implements PlanDao {
 			} else {
 				w = true;
 			}
-			hqlQuery += " p.customer = :customer";
+			hqlQuery += " p.templateId = :customer";
 		}
 		if (!StringUtils.isEmpty(notifyNo)) {
 			if (w) {
@@ -75,16 +91,9 @@ public class PlanDaoImpl implements PlanDao {
 			} else {
 				w = true;
 			}
-			hqlQuery += " p.notifyNo = :notifyNo";
+			hqlQuery += " p.notifyNo like :notifyNo";
 		}
-		if (!StringUtils.isEmpty(file_No)) {
-			if (w) {
-				hqlQuery += " and ";
-			} else {
-				w = true;
-			}
-			hqlQuery += " p.file_No = :file_No";
-		}
+
 		if (!StringUtils.isEmpty(status)) {
 			if (w) {
 				hqlQuery += " and ";
@@ -97,6 +106,17 @@ public class PlanDaoImpl implements PlanDao {
 			} else {
 				hqlQuery += " p.status = :status";
 			}
+
+		}
+		
+		if (!StringUtils.isEmpty(fileNo)) {
+			if (w) {
+				hqlQuery += " and ";
+			} else {
+				w = true;
+			}
+
+			hqlQuery += " exists (from PlanItem pi where pi.plan = p and pi.itemName = 'fileNo' and pi.itemValue like :fileNo)";
 
 		}
 
@@ -120,11 +140,8 @@ public class PlanDaoImpl implements PlanDao {
 		if (!StringUtils.isEmpty(customer)) {
 			query.setParameter("customer", customer);
 		}
-		if (!StringUtils.isEmpty(file_No)) {
-			query.setParameter("file_No", file_No);
-		}
 		if (!StringUtils.isEmpty(notifyNo)) {
-			query.setParameter("notifyNo", notifyNo);
+			query.setParameter("notifyNo", "%" + notifyNo + "%");
 		}
 
 		if (!StringUtils.isEmpty(status)) {
@@ -138,6 +155,11 @@ public class PlanDaoImpl implements PlanDao {
 				query.setParameter("status", PlanStatus.APPROVED);
 			}
 		}
+		
+		if (!StringUtils.isEmpty(fileNo)) {
+			query.setParameter("fileNo", "%" + fileNo + "%");
+		}
+		
 		Long count = (Long) query.getSingleResult();
 		return count;
 	}
@@ -149,11 +171,11 @@ public class PlanDaoImpl implements PlanDao {
 		String dateTo = search.get("dateTo");
 		String customer = search.get("customer");
 		String notifyNo = search.get("notifyNo");
-		String file_No = search.get("file_No");
 		String status = search.get("status");
-
+		String fileNo = search.get("fileNo");
+		
 		String hqlQuery = " from Plan p";
-		if (!search.isEmpty()) {
+		if (hasCriteria(search)) {
 			hqlQuery += " where ";
 		}
 		boolean w = false;
@@ -180,15 +202,7 @@ public class PlanDaoImpl implements PlanDao {
 			} else {
 				w = true;
 			}
-			hqlQuery += " p.customer = :customer";
-		}
-		if (!StringUtils.isEmpty(file_No)) {
-			if (w) {
-				hqlQuery += " and ";
-			} else {
-				w = true;
-			}
-			hqlQuery += " p.file_No = :file_No";
+			hqlQuery += " p.templateId = :customer";
 		}
 		if (!StringUtils.isEmpty(notifyNo)) {
 			if (w) {
@@ -196,7 +210,7 @@ public class PlanDaoImpl implements PlanDao {
 			} else {
 				w = true;
 			}
-			hqlQuery += " p.notifyNo = :notifyNo";
+			hqlQuery += " p.notifyNo like :notifyNo";
 		}
 
 		if (!StringUtils.isEmpty(status)) {
@@ -212,6 +226,18 @@ public class PlanDaoImpl implements PlanDao {
 				hqlQuery += " p.status = :status";
 			}
 		}
+		
+		if (!StringUtils.isEmpty(fileNo)) {
+			if (w) {
+				hqlQuery += " and ";
+			} else {
+				w = true;
+			}
+
+			hqlQuery += " exists (from PlanItem pi where pi.plan = p and pi.itemName = 'fileNo' and pi.itemValue like :fileNo)";
+
+		}
+		
 		hqlQuery += " order by p.notifyNo desc";
 		Query query = em.createQuery(hqlQuery);
 
@@ -233,10 +259,7 @@ public class PlanDaoImpl implements PlanDao {
 			query.setParameter("customer", customer);
 		}
 		if (!StringUtils.isEmpty(notifyNo)) {
-			query.setParameter("notifyNo", notifyNo);
-		}
-		if (!StringUtils.isEmpty(file_No)) {
-			query.setParameter("file_No", file_No);
+			query.setParameter("notifyNo", "%" + notifyNo + "%");
 		}
 		if (!StringUtils.isEmpty(status)) {
 			if (status.equals("CREATING")) {
@@ -248,6 +271,9 @@ public class PlanDaoImpl implements PlanDao {
 			} else if (status.equals("APPROVED")) {
 				query.setParameter("status", PlanStatus.APPROVED);
 			}
+		}
+		if (!StringUtils.isEmpty(fileNo)) {
+			query.setParameter("fileNo", "%" + fileNo + "%");
 		}
 		query.setFirstResult(page * pageSize);
 		query.setMaxResults(pageSize);

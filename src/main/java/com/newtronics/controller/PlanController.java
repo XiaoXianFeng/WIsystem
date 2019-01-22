@@ -45,11 +45,12 @@ import com.newtronics.tx.service.UserService;
 
 @Controller
 @RequestMapping(value = "/plan")
-@SessionAttributes({ "plan" })
+@SessionAttributes({ "plan", "searchForm" })
 public class PlanController {
 
 	private Logger log = Logger.getLogger(PlanController.class);
 
+	private static String SEARCH_FORM = "searchForm";
 	@Autowired
 	private UserService userService;
 
@@ -62,37 +63,50 @@ public class PlanController {
 	@Autowired
 	private MailService mailService;
 
+	public Map<String, String> setRequestForm(Map<String, String> searchMap, String name, String value) {
+		
+		searchMap.remove(name);
+		if(!StringUtils.isEmpty(value)) {
+			searchMap.put(name, value);
+		}
+		return searchMap;
+	}
+
 	@RequestMapping(value = "filter.html", method = { RequestMethod.POST })
 	public ModelAndView filter(Principal principal, ModelMap modelMap,
 			@RequestParam(name = "dateFrom", required = false) String dateFrom,
 			@RequestParam(name = "dateTo", required = false) String dateTo,
 			@RequestParam(name = "customer", required = false) String customer,
 			@RequestParam(name = "notifyNo", required = false) String notifyNo,
-			@RequestParam(name = "file_No", required = false) String file_No,
+			@RequestParam(name = "fileNo", required = false) String fileNo,
 			@RequestParam(name = "status", required = false) String status) {
 		@SuppressWarnings("unchecked")
-		Map<String, String> search = (Map<String, String>) modelMap.get("search");
+		Map<String, String> search = (Map<String, String>) modelMap.get(SEARCH_FORM);
 		if (search == null) {
 			search = new HashMap<String, String>();
-			modelMap.put("search", search);
-		} else {
-			search.clear();
+			modelMap.put(SEARCH_FORM, search);
 		}
-		if(!StringUtils.isEmpty(dateFrom)) {
-			search.put("dateFrom", dateFrom);
+		search.clear();
+		
+		if (!StringUtils.isEmpty(dateFrom)) {
+			setRequestForm(search, "dateFrom", dateFrom);
 		}
-		if(!StringUtils.isEmpty(dateTo)) {
-			search.put("dateTo", dateTo);
+		if (!StringUtils.isEmpty(dateTo)) {
+			setRequestForm(search, "dateTo", dateTo);
 		}
-		if(!StringUtils.isEmpty(customer)) {
-			search.put("customer", customer);
+		if (!StringUtils.isEmpty(customer)) {
+			setRequestForm(search, "customer", customer);
 		}
-		if(!StringUtils.isEmpty(notifyNo)) {
-			search.put("notifyNo", notifyNo);
+		if (!StringUtils.isEmpty(notifyNo)) {
+			setRequestForm(search, "notifyNo", notifyNo);
 		}
-		if(!StringUtils.isEmpty(status)) {
-			search.put("status", status);
+		if (!StringUtils.isEmpty(status)) {
+			setRequestForm(search, "status", status);
 		}
+		if (!StringUtils.isEmpty(fileNo)) {
+			setRequestForm(search, "fileNo", fileNo);
+		}
+		
 		ModelAndView mv = list(principal, modelMap, "0", "10");
 		mv.setViewName("listPlanTable");
 		return mv;
@@ -108,22 +122,29 @@ public class PlanController {
 			@RequestParam(name = "page", required = false) String page,
 			@RequestParam(name = "pageSize", required = false) String pageSize) {
 
+		@SuppressWarnings("unchecked")
+		Map<String, String> search = (Map<String, String>) modelMap.get(SEARCH_FORM);
+		if (search == null) {
+			search = new HashMap<String, String>();
+			modelMap.put(SEARCH_FORM, search);
+		}
+		
 		int p = 0;
+		if (StringUtils.isEmpty(page)) {
+			page = search.get("page");
+		}
+		
 		if (!StringUtils.isEmpty(page)) {
 			p = Integer.valueOf(page);
 		}
+		
 		int ps = 10;
 		if (!StringUtils.isEmpty(pageSize)) {
 			ps = Integer.valueOf(pageSize);
 		}
-
-		@SuppressWarnings("unchecked")
-		Map<String, String> search = (Map<String, String>) modelMap.get("search");
-		if (search == null) {
-			search = new HashMap<String, String>();
-			modelMap.put("search", search);
-		}
-
+		
+		search.put("page", String.valueOf(p));
+		
 		Long totalCount = planService.getPageCount(search);
 		Long pageCount = (totalCount + ps - 1) / ps;
 		modelMap.put("pageCount", pageCount);
@@ -144,6 +165,19 @@ public class PlanController {
 		return mv;
 	}
 
+	@RequestMapping(value = "printView.html", method = { RequestMethod.GET, RequestMethod.POST })
+	public ModelAndView printView(Principal principal,
+			@RequestParam(name = "notifyNo", required = false) String notifyNo,
+			@RequestParam(name = "planId", required = false) String planId) {
+		return inputPlan(principal, null, notifyNo, planId);
+	}
+	
+	@RequestMapping(value = "view.html", method = { RequestMethod.GET, RequestMethod.POST })
+	public ModelAndView viewPlan(Principal principal,
+			@RequestParam(name = "notifyNo", required = false) String notifyNo,
+			@RequestParam(name = "planId", required = false) String planId) {
+		return inputPlan(principal, null, notifyNo, planId);
+	}
 	/**
 	 * 从创建计划迁移而来，创建Plan对象并保持在内存中
 	 * 
@@ -151,11 +185,12 @@ public class PlanController {
 	 * @return
 	 */
 	@RequestMapping(value = "input.html", method = { RequestMethod.GET, RequestMethod.POST })
-	public ModelAndView inputPlan(Principal principal, @RequestParam(name = "templateId", required = false) String templateId,
+	public ModelAndView inputPlan(Principal principal,
+			@RequestParam(name = "templateId", required = false) String templateId,
 			@RequestParam(name = "notifyNo", required = false) String notifyNo,
 			@RequestParam(name = "planId", required = false) String planId) {
 		ModelAndView mv = new ModelAndView();
-		
+
 		Plan plan = null;
 		String tid = templateId;
 		if (StringUtils.isEmpty(notifyNo)) {
@@ -212,8 +247,9 @@ public class PlanController {
 	 */
 	@RequestMapping(value = "save.html", method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<HttpStatus> saveItem(Principal principal, ModelMap modelMap, @RequestParam("name") String name,
-			@RequestParam("pk") String pk, @RequestParam(name = "value", required = false) String value,
+	public ResponseEntity<HttpStatus> saveItem(Principal principal, ModelMap modelMap,
+			@RequestParam("name") String name, @RequestParam("pk") String pk,
+			@RequestParam(name = "value", required = false) String value,
 			@RequestParam(name = "value[]", required = false) String values) {
 
 		Plan plan = (Plan) modelMap.get("plan");
@@ -247,7 +283,7 @@ public class PlanController {
 			return new ResponseEntity<>(HttpStatus.OK);
 		} catch (Exception e) {
 			log.error(e.getMessage());
-			
+
 		}
 		return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 	}
@@ -287,8 +323,8 @@ public class PlanController {
 				mv.setViewName(template.getViewName());
 				return mv;
 			}
-			User creator = userService.getUserByName(principal.getName());
-			plan.setCreator(creator);
+			User user = userService.getUserByName(principal.getName());
+			plan.setCreator(user);
 			plan.setCreateDate(new Date());
 			plan.setStatus(PlanStatus.REVIEWING);
 			plan.setReviewStatus(ApproveResult.NONE);
@@ -297,7 +333,7 @@ public class PlanController {
 
 			Template template = templateService.findTemplateById(plan.getTemplateId());
 			if (template != null && !StringUtils.isEmpty(template.getReviewers())) {
-				mailService.sendReviewEmail(plan, template);
+				mailService.sendReviewEmail(user.getUserDispName(),plan, template);
 			}
 
 		} catch (Exception e) {
@@ -328,22 +364,29 @@ public class PlanController {
 				mv.setViewName("error");
 				return mv;
 			}
-			User creator = userService.getUserByName(principal.getName());
-			plan.setReviewer(creator);
+			User user = userService.getUserByName(principal.getName());
+			plan.setReviewer(user);
 			plan.setReviewDate(new Date());
 			if ("发回修改".equals(action)) {
 				plan.setStatus(PlanStatus.CREATING);
 				plan.setReviewStatus(ApproveResult.REJECTED);
+				
+				planService.updatePlan(plan);
+
+				Template template = templateService.findTemplateById(plan.getTemplateId());
+				if (template != null && template.getCreatorNames() != null && !template.getCreatorNames().isEmpty()) {
+					mailService.sendRejectEmail(user.getUserDispName(), plan, template);
+				}
 			} else {
 				plan.setStatus(PlanStatus.APPROVING);
 				plan.setReviewStatus(ApproveResult.APPROVED);
-			}
+				
+				planService.updatePlan(plan);
 
-			planService.updatePlan(plan);
-
-			Template template = templateService.findTemplateById(plan.getTemplateId());
-			if (template != null && template.getApprovers() != null && !template.getApprovers().isEmpty()) {
-				mailService.sendReviewEmail(plan, template);
+				Template template = templateService.findTemplateById(plan.getTemplateId());
+				if (template != null && template.getApprovers() != null && !template.getApprovers().isEmpty()) {
+					mailService.sendApproveEmail(user.getUserDispName(), plan, template);
+				}
 			}
 
 		} catch (Exception e) {
@@ -376,31 +419,28 @@ public class PlanController {
 				return mv;
 			}
 
-			User creator = userService.getUserByName(principal.getName());
-			plan.setApprover(creator);
+			User user = userService.getUserByName(principal.getName());
+			plan.setApprover(user);
 			plan.setApproveDate(new Date());
 			if ("发回修改".equals(action)) {
 				plan.setStatus(PlanStatus.CREATING);
 				plan.setReviewStatus(ApproveResult.REJECTED);
 				plan.setApproveStatus(ApproveResult.REJECTED);
+				planService.updatePlan(plan);
+				
+				Template template = templateService.findTemplateById(plan.getTemplateId());
+				if (template != null && template.getApprovers() != null && !template.getApprovers().isEmpty()) {
+					mailService.sendRejectEmail(user.getUserDispName(), plan, template);
+				}
 			} else {
 				plan.setStatus(PlanStatus.APPROVED);
 				plan.setApproveStatus(ApproveResult.APPROVED);
-			}
-			planService.updatePlan(plan);
-
-			Template template = templateService.findTemplateById(plan.getTemplateId());
-			if (template != null) {
-				StringBuffer sb = new StringBuffer();
-				for (User u : template.getApprovers()) {
-					if (!StringUtils.isEmpty(u.getEmail())) {
-						if (sb.length() > 0) {
-							sb.append(";");
-						}
-						sb.append(u.getEmail());
-					}
+				planService.updatePlan(plan);
+				
+				Template template = templateService.findTemplateById(plan.getTemplateId());
+				if (template != null && template.getApprovers() != null && !template.getApprovers().isEmpty()) {
+					mailService.sendCompleteEmail(user.getUserDispName(),plan, template);
 				}
-
 			}
 
 		} catch (Exception e) {

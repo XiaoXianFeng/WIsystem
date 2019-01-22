@@ -16,10 +16,10 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MapKey;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Version;
-import javax.persistence.Table;
 
 import com.newtronics.common.ApproveResult;
 import com.newtronics.common.PlanStatus;
@@ -27,7 +27,6 @@ import com.newtronics.common.PlanStatus;
 @Entity
 @Table(name="Plans")
 public class Plan {
-	
 	// 主键
 	@Id
 	private String planId;
@@ -44,9 +43,6 @@ public class Plan {
 
 	// 通知书号码
 	private String notifyNo;
-	
-	// 文件编号
-	private String file_No;
 
 	// 版本号
 	@Version
@@ -141,14 +137,6 @@ public class Plan {
 
 	public void setNotifyNo(String notifyNo) {
 		this.notifyNo = notifyNo;
-	}
-	
-	public String getfile_No() {
-		return file_No;
-	}
-
-	public void setfile_No(String file_No) {
-		this.file_No = file_No;
 	}
 
 	public User getCreator() {

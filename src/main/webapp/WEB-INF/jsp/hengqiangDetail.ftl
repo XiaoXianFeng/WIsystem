@@ -40,7 +40,7 @@
 		<tr>
 			<td style="width:100px">文件编号:</td>
 			<td style="width:200px">
-				<a href="#" class="editable" id="file_No" data-type="text" data-pk="file_No" data-url="${(rc.getContextPath())!}/do/plan/save.html" data-title="输入文件编号">${(plan.planItems['file_No'].itemValue)!}
+				<a href="#" class="editable" id="fileNo" data-type="text" data-pk="fileNo" data-url="${(rc.getContextPath())!}/do/plan/save.html" data-title="输入文件编号">${(plan.planItems['fileNo'].itemValue)!}
 				</a>
 			</td>
 			<td style="width:100px">日    期：</td>
@@ -454,30 +454,4 @@
 	</script>
 </#if>
 
-<center>
-	<table style="border:0;">
-		<tr>
-			<th style="width:80px">制表</th>
-			<td style="width:160px">${plan.creator.userDispName}</td>
-			<th style="width:80px">审核</th>
-			<td style="width:160px">
-				<#if plan.reviewStatus == 'REJECTED' || plan.reviewStatus == 'APPROVED'>
-				<div class="stamp stamp-${plan.reviewStatus}">
-					<span>${plan.reviewDate?string["yyyy-MM-dd"]}</span>
-					<span>${plan.reviewer.userDispName}</span>
-				</div>
-				</#if>
-			</td>
-			<th style="width:80px">承认</th>
-			<td style="width:160px">
-				<#if plan.approveStatus == 'REJECTED' || plan.approveStatus == 'APPROVED'>
-				<div class="stamp stamp-${plan.approveStatus}">
-					<span>${plan.approveDate?string["yyyy-MM-dd"]}</span>
-					<span>${plan.approver.userDispName}</span>
-				</div>
-				</#if>
-			</td>
-			<td></td>
-		</tr>
-	</table>
-</center>
+<#include "stamp.ftl">
